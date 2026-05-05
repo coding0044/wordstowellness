@@ -17,8 +17,16 @@ const UserSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
     minlength: 6,
+    // Not required for OAuth users
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local',
+  },
+  image: {
+    type: String,
   },
   role: {
     type: String,
@@ -37,8 +45,8 @@ const UserSchema = new mongoose.Schema({
 
 // CORRECTED: For async middleware, don't use 'next' parameter
 UserSchema.pre('save', async function() {
-  // Skip if password is not modified
-  if (!this.isModified('password')) {
+  // Skip if password is not modified or not provided (OAuth users)
+  if (!this.isModified('password') || !this.password) {
     return;
   }
   
@@ -59,9 +67,12 @@ UserSchema.pre('save', async function() {
   }
 });
 
-// Compare password method
+// Compare password method (only for local users)
 UserSchema.methods.matchPassword = async function(enteredPassword) {
   try {
+    if (!this.password) {
+      return false;
+    }
     return await bcrypt.compare(enteredPassword, this.password);
   } catch (error) {
     console.error('Password comparison error:', error);
