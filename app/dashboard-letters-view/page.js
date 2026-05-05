@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCurrentUser } from '@/hooks/useAuth';
-import { useCategories, useSubcategoriesByCategory } from '@/hooks/useContent';
+import { useTopics, useLettersByTopic } from '@/hooks/useContent';
 import Link from 'next/link';
 
 // Navigation Component
@@ -24,7 +24,7 @@ function Navbar({ user }) {
         <svg className="w-6 h-6 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
         </svg>
-        <span className="text-xl font-semibold text-gray-800">Soften</span>
+        <span className="text-xl font-semibold text-gray-800">Wordstowellness</span>
       </Link>
 
       <div className="hidden md:flex items-center gap-1">
@@ -48,42 +48,42 @@ function Navbar({ user }) {
   );
 }
 
-// Subcategory Card Component
-function SubcategoryCard({ subcategory }) {
+// Letter Card Component
+function LetterCard({ letter }) {
   return (
-    <Link href={`/dashboard-topics?sub=${subcategory._id}`} className="group block bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-emerald-200 transition-all duration-200">
+    <div className="group block bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-200 transition-all duration-200">
       <div className="flex items-start justify-between mb-4">
-        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-2xl shadow-md group-hover:scale-105 transition-transform">
-          📁
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-2xl shadow-md">
+          📄
         </div>
-        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-semibold uppercase tracking-wide">Subcategory</span>
+        <span className="px-2.5 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-semibold uppercase tracking-wide">Letter</span>
       </div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors line-clamp-2">{subcategory.name}</h3>
-      {subcategory.description && (
-        <p className="text-sm text-gray-600 mb-4 line-clamp-3 leading-relaxed">{subcategory.description}</p>
+      <h3 className="text-lg font-semibold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors line-clamp-2">{letter.title}</h3>
+      {letter.content && (
+        <p className="text-sm text-gray-600 mb-4 line-clamp-4 leading-relaxed">{letter.content}</p>
       )}
       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <span className="text-xs text-gray-500">{subcategory.createdAt ? new Date(subcategory.createdAt).toLocaleDateString() : ''}</span>
-        <div className="flex items-center space-x-1 text-emerald-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-          <span>Explore</span>
+        <span className="text-xs text-gray-500">{letter.createdAt ? new Date(letter.createdAt).toLocaleDateString() : ''}</span>
+        <button className="flex items-center space-x-1 text-orange-600 font-semibold text-sm hover:translate-x-1 transition-transform">
+          <span>Read More</span>
           <span>→</span>
-        </div>
+        </button>
       </div>
-    </Link>
+    </div>
   );
 }
 
-// Main Subcategories Content
-function SubcategoriesContent() {
+// Main Letters View Content
+function LettersViewContent() {
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const categoryId = searchParams.get('cat');
+  const topicId = searchParams.get('topic');
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: userData, isLoading: userLoading, error: userError } = useCurrentUser();
-  const { data: categoriesData } = useCategories();
-  const { data: subcategoriesData, isLoading: subcategoriesLoading } = useSubcategoriesByCategory(categoryId);
+  const { data: topicsData } = useTopics();
+  const { data: lettersData, isLoading: lettersLoading } = useLettersByTopic(topicId);
 
   useEffect(() => {
     setIsClient(true);
@@ -94,18 +94,18 @@ function SubcategoriesContent() {
   }, [userError, router]);
 
   useEffect(() => {
-    if (!categoryId && isClient) {
+    if (!topicId && isClient) {
       router.push('/dashboard-letters');
     }
-  }, [categoryId, isClient, router]);
+  }, [topicId, isClient, router]);
 
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
-  const subcategories = Array.isArray(subcategoriesData) ? subcategoriesData : [];
-  const currentCategory = categories.find(c => c._id === categoryId);
+  const topics = Array.isArray(topicsData) ? topicsData : [];
+  const letters = Array.isArray(lettersData) ? lettersData : [];
+  const currentTopic = topics.find(t => t._id === topicId);
 
-  const filteredSubcategories = subcategories.filter(sub =>
-    sub.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sub.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredLetters = letters.filter(letter =>
+    letter.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    letter.content?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!isClient || userLoading) {
@@ -132,26 +132,28 @@ function SubcategoriesContent() {
           <span>/</span>
           <Link href="/dashboard-letters" className="hover:text-sky-600 transition-colors">Categories</Link>
           <span>/</span>
-          <span className="text-gray-900 font-medium">{currentCategory?.name || 'Subcategories'}</span>
+          <span className="text-gray-400">...</span>
+          <span>/</span>
+          <span className="text-gray-900 font-medium">{currentTopic?.name || 'Letters'}</span>
         </div>
 
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <Link href="/dashboard-letters" className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+            <button onClick={() => router.back()} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
               </svg>
-              Back to Categories
-            </Link>
+              Back
+            </button>
           </div>
           <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-2xl shadow-md">
-              📁
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-2xl shadow-md">
+              📄
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{currentCategory?.name || 'Subcategories'}</h1>
-              <p className="text-gray-600">{subcategories.length} subcategories found</p>
+              <h1 className="text-3xl font-bold text-gray-900">{currentTopic?.name || 'Letters'}</h1>
+              <p className="text-gray-600">{letters.length} letters available</p>
             </div>
           </div>
         </div>
@@ -165,44 +167,44 @@ function SubcategoriesContent() {
           </div>
           <input
             type="text"
-            placeholder="Search subcategories..."
+            placeholder="Search letters..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-12 pr-5 py-3.5 text-base border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all duration-200 bg-white"
+            className="block w-full pl-12 pr-5 py-3.5 text-base border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all duration-200 bg-white"
           />
         </div>
 
-        {/* Subcategories Grid */}
-        {subcategoriesLoading ? (
+        {/* Letters Grid */}
+        {lettersLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="space-y-4">
-              <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mx-auto"></div>
-              <p className="text-gray-600 text-center">Loading subcategories...</p>
+              <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto"></div>
+              <p className="text-gray-600 text-center">Loading letters...</p>
             </div>
           </div>
-        ) : filteredSubcategories.length === 0 ? (
+        ) : filteredLetters.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-24 h-24 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-4xl mb-4">📁</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">{searchQuery ? 'No subcategories found' : 'No subcategories available'}</h3>
-            <p className="text-gray-600">{searchQuery ? 'Try a different search term' : 'Subcategories will appear here once they\'re added.'}</p>
+            <div className="w-24 h-24 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center text-4xl mb-4">📄</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">{searchQuery ? 'No letters found' : 'No letters available'}</h3>
+            <p className="text-gray-600">{searchQuery ? 'Try a different search term' : 'Letters will appear here once they\'re added.'}</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredSubcategories.map((subcategory) => (
-              <SubcategoryCard key={subcategory._id} subcategory={subcategory} />
+            {filteredLetters.map((letter) => (
+              <LetterCard key={letter._id} letter={letter} />
             ))}
           </div>
         )}
 
         <footer className="mt-16 text-center">
-          <p className="text-sm text-gray-500">Soften - write with care.</p>
+          <p className="text-sm text-gray-500">Wordstowellness - write with care.</p>
         </footer>
       </main>
     </div>
   );
 }
 
-export default function SubcategoriesPage() {
+export default function LettersViewPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-sky-50 to-teal-50 flex items-center justify-center">
@@ -212,7 +214,7 @@ export default function SubcategoriesPage() {
         </div>
       </div>
     }>
-      <SubcategoriesContent />
+      <LettersViewContent />
     </Suspense>
   );
 }

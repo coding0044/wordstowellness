@@ -1,101 +1,156 @@
 'use client';
 import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import DashboardShell from '@/components/DashboardShell';
+import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/hooks/useAuth';
-import { useCategories, useSubcategoriesByCategory, useTopicsBySubcategory, useLettersByTopic } from '@/hooks/useContent';
+import Link from 'next/link';
 
-const levelToPath = {
-  categories: 'dashboard-categories',
-  subcategories: 'dashboard-subcategories',
-  topics: 'dashboard-topics',
-  letters: 'dashboard-letters'
-};
+// Navigation Component
+function Navbar({ user }) {
+  const router = useRouter();
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  return (
+    <nav className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      {/* Logo */}
+      <Link href="/dashboard" className="flex items-center gap-2">
+        <svg className="w-6 h-6 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+        <span className="text-xl font-semibold text-gray-800">Wordstowellness</span>
+      </Link>
+
+      {/* Navigation Links */}
+      <div className="hidden md:flex items-center gap-1">
+        <Link href="/dashboard" className="px-4 py-2 rounded-full bg-sky-100 text-sky-700 font-medium text-sm">
+          Dashboard
+        </Link>
+        <Link href="/dashboard-letters" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+          Browse letters
+        </Link>
+        <Link href="/search-feelings" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+          Search by feelings
+        </Link>
+        <Link href="/improve-message" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+          Improve my message
+        </Link>
+        <Link href="/pricing" className="px-4 py-2 rounded-full text-gray-600 hover:bg-gray-100 font-medium text-sm transition-colors">
+          Pricing
+        </Link>
+      </div>
+
+      {/* User Actions */}
+      <div className="flex items-center gap-3">
+        <span className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-full text-sm font-medium">
+          Free plan
+        </span>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-all cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Log out
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+// Stats Card Component
+function StatCard({ label, value, icon }) {
+  const icons = {
+    plan: (
+      <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+    ),
+    uses: (
+      <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+      </svg>
+    ),
+    resets: (
+      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    )
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="flex items-start justify-between mb-4">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+        {icons[icon]}
+      </div>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+    </div>
+  );
+}
+
+// Tool Card Component
+function ToolCard({ title, description, icon, badge, href }) {
+  const icons = {
+    letters: (
+      <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+        <svg className="w-6 h-6 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+    ),
+    search: (
+      <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+        <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+    ),
+    improve: (
+      <div className="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center">
+        <svg className="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+        </svg>
+      </div>
+    )
+  };
+
+  return (
+    <Link href={href} className="group block bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-sky-200 transition-all duration-200">
+      <div className="flex items-start justify-between mb-4">
+        {icons[icon]}
+        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium uppercase tracking-wide">
+          {badge}
+        </span>
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-sky-600 transition-colors">{title}</h3>
+      <p className="text-sm text-gray-600 mb-6 leading-relaxed">{description}</p>
+      <button className="w-full py-2.5 px-4 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors">
+        Open
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+      </button>
+    </Link>
+  );
+}
+
+// Main Dashboard Content
 function DashboardContent() {
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { data: userData, isLoading: userLoading, error: userError } = useCurrentUser();
 
-  // Navigation state
-  const [currentLevel, setCurrentLevel] = useState('categories'); // categories, subcategories, topics, letters
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
-  const [selectedTopic, setSelectedTopic] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Determine initial level and selected items from URL
   useEffect(() => {
     setIsClient(true);
-    const path = pathname?.replace('/', '');
-    if (path && path.startsWith('dashboard-')) {
-      const level = Object.keys(levelToPath).find(key => levelToPath[key] === path);
-      if (level) {
-        setCurrentLevel(level);
-      }
-    }
-    // Restore selected items from URL params
-    const catId = searchParams?.get('cat');
-    const subId = searchParams?.get('sub');
-    const topicId = searchParams?.get('topic');
-    if (catId) setSelectedCategory({ _id: catId });
-    if (subId) setSelectedSubcategory({ _id: subId });
-    if (topicId) setSelectedTopic({ _id: topicId });
-  }, [pathname, searchParams]);
-
-  // Use our custom hooks
-  const { data: userData, isLoading: userLoading, error: userError } = useCurrentUser();
-  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
-
-  const { data: subcategoriesData, isLoading: subcategoriesLoading } = useSubcategoriesByCategory(
-    selectedCategory?._id || null
-  );
-  
-  const { data: topicsData, isLoading: topicsLoading } = useTopicsBySubcategory(
-    selectedSubcategory?._id || null
-  );
-  
-  const { data: lettersData, isLoading: lettersLoading } = useLettersByTopic(
-    selectedTopic?._id || null
-  );
-
-  const user = userData;
-  const categories = Array.isArray(categoriesData) ? categoriesData : [];
-  const subcategories = Array.isArray(subcategoriesData) ? subcategoriesData : [];
-  const topics = Array.isArray(topicsData) ? topicsData : [];
-  const letters = Array.isArray(lettersData) ? lettersData : [];
-
-  // Update selected objects with full data when available
-  useEffect(() => {
-    const catId = selectedCategory?._id;
-    if (catId && categories.length > 0) {
-      const fullCat = categories.find(c => c._id === catId);
-      if (fullCat && fullCat.name !== selectedCategory.name) {
-        setSelectedCategory(fullCat);
-      }
-    }
-  }, [categories, selectedCategory]);
-
-  useEffect(() => {
-    const subId = selectedSubcategory?._id;
-    if (subId && subcategories.length > 0) {
-      const fullSub = subcategories.find(s => s._id === subId);
-      if (fullSub && fullSub.name !== selectedSubcategory.name) {
-        setSelectedSubcategory(fullSub);
-      }
-    }
-  }, [subcategories, selectedSubcategory]);
-
-  useEffect(() => {
-    const topicId = selectedTopic?._id;
-    if (topicId && topics.length > 0) {
-      const fullTopic = topics.find(t => t._id === topicId);
-      if (fullTopic && fullTopic.name !== selectedTopic.name) {
-        setSelectedTopic(fullTopic);
-      }
-    }
-  }, [topics, selectedTopic]);
+  }, []);
 
   useEffect(() => {
     if (userError) {
@@ -105,377 +160,121 @@ function DashboardContent() {
 
   if (!isClient || userLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center animate-fade-in">
-        <div className="space-y-6">
-          <div className="animate-spin rounded-full h-32 w-32 border-4 border-primary-200 border-t-primary-600 mx-auto shadow-glow"></div>
-          <p className="text-secondary-900 text-center text-lg font-medium">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-sky-50 to-teal-50 flex items-center justify-center">
+        <div className="space-y-4">
+          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-600 text-center">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return null; // Will redirect via useEffect
+  if (!userData) {
+    return null;
   }
 
-  const buildUrl = (level, params = {}) => {
-    const newPath = levelToPath[level];
-    if (!newPath) return '';
-    const queryParams = new URLSearchParams();
-    if (params.cat) queryParams.set('cat', params.cat);
-    if (params.sub) queryParams.set('sub', params.sub);
-    if (params.topic) queryParams.set('topic', params.topic);
-    const queryString = queryParams.toString();
-    return queryString ? `/${newPath}?${queryString}` : `/${newPath}`;
-  };
-
-  const updateUrl = (level, params = {}) => {
-    const url = buildUrl(level, params);
-    if (url) {
-      router.replace(url);
-    }
-  };
-
-  const handleBack = () => {
-    if (currentLevel === 'subcategories') {
-      setCurrentLevel('categories');
-      setSelectedCategory(null);
-      updateUrl('categories');
-    } else if (currentLevel === 'topics') {
-      setCurrentLevel('subcategories');
-      setSelectedSubcategory(null);
-      updateUrl('subcategories', { cat: selectedCategory?._id });
-    } else if (currentLevel === 'letters') {
-      setCurrentLevel('topics');
-      setSelectedTopic(null);
-      updateUrl('topics', { cat: selectedCategory?._id, sub: selectedSubcategory?._id });
-    }
-  };
-
-
-
-  // Navigation handlers
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setSelectedSubcategory(null);
-    setSelectedTopic(null);
-    setCurrentLevel('subcategories');
-    updateUrl('subcategories', { cat: category._id });
-  };
-
-  const handleSubcategoryClick = (subcategory) => {
-    setSelectedSubcategory(subcategory);
-    setSelectedTopic(null);
-    setCurrentLevel('topics');
-    updateUrl('topics', { cat: selectedCategory?._id, sub: subcategory._id });
-  };
-
-  const handleTopicClick = (topic) => {
-    setSelectedTopic(topic);
-    setCurrentLevel('letters');
-    updateUrl('letters', { cat: selectedCategory?._id, sub: selectedSubcategory?._id, topic: topic._id });
-  };
-
-  // Combined loading state
-  const contentLoading = categoriesLoading || subcategoriesLoading || topicsLoading || lettersLoading;
-
-  // Filter items based on search
-  const filteredCategories = categories.filter(cat => 
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cat.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredSubcategories = subcategories.filter(sub => 
-    sub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sub.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredTopics = topics.filter(topic => 
-    topic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    topic.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
-  const filteredLetters = letters.filter(letter => 
-    letter.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    letter.content?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (contentLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center px-4 animate-fade-in">
-        <div className="rounded-3xl bg-white/95 px-8 py-12 text-center shadow-2xl shadow-primary-500/20 max-w-md card">
-          <div className="space-y-6">
-            <div className="relative w-20 h-20 mx-auto">
-              <div className="w-20 h-20 border-4 border-primary-200 rounded-full animate-spin border-t-primary-600"></div>
-              <div className="absolute inset-2 w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-3xl shadow-glow">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-secondary-900">Loading amazing content...</p>
-              <p className="text-secondary-600 mt-2">Please wait while we fetch the latest data for you</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const user = userData;
 
   return (
-    <DashboardShell title="" subtitle="">
-      <div className="space-y-8">
-        {/* Welcome Header with Stats */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 text-white shadow-2xl">
-          <div className="absolute inset-0 bg-black/5"></div>
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-20 -left-40 w-80 h-80 bg-white rounded-full blur-3xl"></div>
-          </div>
-          <div className="relative z-10">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-              <div className="mb-6 lg:mb-0">
-                <h1 className="text-4xl lg:text-5xl font-bold mb-3">
-                  Welcome back, <span className="bg-gradient-to-r from-yellow-200 via-yellow-300 to-orange-200 bg-clip-text text-transparent">{user?.name}</span>! 👋
-                </h1>
-                <p className="text-purple-100 text-lg lg:text-xl font-medium">Discover amazing content organized just for you</p>
-              </div>
-         
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-sky-50 to-teal-50">
+      <Navbar user={user} />
+      
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <p className="text-sky-600 font-medium mb-1">Welcome back</p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Hello, {user?.name || 'User'}.
+              </h1>
+              <p className="text-gray-600">Take a breath. What would you like to work on today?</p>
             </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Categories', value: categories.length, icon: '📚', color: 'bg-blue-500/20', border: 'border-blue-300/50' },
-                { label: 'Subcategories', value: subcategories.length, icon: '📁', color: 'bg-green-500/20', border: 'border-green-300/50' },
-                { label: 'Topics', value: topics.length, icon: '📋', color: 'bg-purple-500/20', border: 'border-purple-300/50' },
-                { label: 'Letters', value: letters.length, icon: '📄', color: 'bg-orange-500/20', border: 'border-orange-300/50' }
-              ].map((stat, idx) => (
-                <div key={idx} className={`${stat.color} backdrop-blur-sm rounded-xl p-5 border ${stat.border} hover:bg-white/15 transition-all duration-300 transform hover:scale-105`}>
-                  <div className="text-3xl font-bold text-white mb-2">{stat.value}</div>
-                  <div className="text-sm text-white/90 flex items-center gap-2">
-                    <span className="text-xl">{stat.icon}</span>
-                    <span className="font-medium">{stat.label}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100">
+              <svg className="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+              <span className="text-sm font-medium text-gray-700">Writing with care</span>
             </div>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <span className="text-xl">🔍</span>
-          </div>
-          <input
-            type="text"
-            placeholder={`Search ${currentLevel}...`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-12 pr-5 py-4 text-base border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-300"
-          />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          <StatCard label="Plan" value="Free" icon="plan" />
+          <StatCard label="Uses Left" value="1/3" icon="uses" />
+          <StatCard label="Resets" value="Weekly" icon="resets" />
         </div>
 
-        {/* Main Content Area */}
-        <div className="space-y-8">
-          {/* Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl shadow-lg">
-                  {currentLevel === 'categories' && '📚'}
-                  {currentLevel === 'subcategories' && '📁'}
-                  {currentLevel === 'topics' && '📋'}
-                  {currentLevel === 'letters' && '📄'}
-                </div>
-                <div>
-                  <h2 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    {currentLevel === 'categories' && 'All Categories'}
-                    {currentLevel === 'subcategories' && selectedCategory?.name}
-                    {currentLevel === 'topics' && selectedSubcategory?.name}
-                    {currentLevel === 'letters' && selectedTopic?.name}
-                  </h2>
-                  <p className="text-gray-600 text-lg font-medium">
-                    {currentLevel === 'categories' && `${categories.length} categories available`}
-                    {currentLevel === 'subcategories' && `${subcategories.length} subcategories found`}
-                    {currentLevel === 'topics' && `${topics.length} topics available`}
-                    {currentLevel === 'letters' && `${letters.length} letters available`}
-                  </p>
+        {/* Tools Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Your tools</h2>
+            <span className="text-sm text-gray-500">3 features</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ToolCard
+              title="Browse Letters"
+              description="Explore therapeutic letters by category and topic."
+              icon="letters"
+              badge="Library"
+              href="/dashboard-letters"
+            />
+            <ToolCard
+              title="Search by Feelings"
+              description="Describe how you feel and find matching letters."
+              icon="search"
+              badge="Discover"
+              href="/search-feelings"
+            />
+            <ToolCard
+              title="Improve My Message"
+              description="Refine your message with AI while keeping your tone."
+              icon="improve"
+              badge="AI Tool"
+              href="/improve-message"
+            />
+          </div>
+        </div>
+
+        {/* Free Plan Banner */}
+        <div className="mt-10 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl p-6 border border-teal-100">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">You're on Free Plan - 1 use left</h3>
+                <p className="text-sm text-gray-600 max-w-md">
+                  Upgrade to Premium for unlimited letters, refinements, and feeling-based search.
+                </p>
+                <div className="mt-3 w-32 h-1.5 bg-white rounded-full overflow-hidden">
+                  <div className="w-1/3 h-full bg-sky-500 rounded-full"></div>
                 </div>
               </div>
             </div>
-            {currentLevel !== 'categories' && (
-              <button
-                onClick={handleBack}
-                className="group flex items-center space-x-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-indigo-100 hover:to-purple-100 rounded-xl px-6 py-3 font-semibold text-gray-700 hover:text-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1"
-              >
-                <span>←</span>
-                <span>Back</span>
-              </button>
-            )}
+            <Link
+              href="/pricing"
+              className="px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-medium text-sm flex items-center gap-2 transition-colors"
+            >
+              Upgrade
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+              </svg>
+            </Link>
           </div>
-
-          {/* Empty State */}
-          {!contentLoading && ((currentLevel === 'categories' && filteredCategories.length === 0) || 
-                              (currentLevel === 'subcategories' && filteredSubcategories.length === 0) || 
-                              (currentLevel === 'topics' && filteredTopics.length === 0) || 
-                              (currentLevel === 'letters' && filteredLetters.length === 0)) && (
-            <div className="col-span-full">
-              <div className="text-center py-16 space-y-6">
-                <div className="w-32 h-32 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center text-5xl shadow-lg">
-                  {currentLevel === 'categories' && '📚'}
-                  {currentLevel === 'subcategories' && '📁'}
-                  {currentLevel === 'topics' && '📋'}
-                  {currentLevel === 'letters' && '📄'}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 bg-clip-text text-transparent mb-2">
-                    {searchQuery ? 'No results found' : `No ${currentLevel} available`}
-                  </h3>
-                  <p className="text-gray-600 text-lg">
-                    {searchQuery ? 'Try a different search query' : `${currentLevel} will appear here once they're added.`}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Categories Grid */}
-          {!contentLoading && currentLevel === 'categories' && filteredCategories.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredCategories.map((cat, index) => (
-                <div
-                  key={cat._id}
-                  onClick={() => handleCategoryClick(cat)}
-                  className="group cursor-pointer bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-indigo-300 hover:shadow-2xl hover:shadow-indigo-200/50 hover:-translate-y-2 transition-all duration-300 shadow-lg"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      📚
-                    </div>
-                    <span className="bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
-                      Category
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-xl mb-3 group-hover:text-indigo-700 transition-colors line-clamp-2">{cat.name}</h3>
-                  {cat.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">{cat.description}</p>
-                  )}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">{new Date(cat.createdAt).toLocaleDateString()}</span>
-                    <div className="flex items-center space-x-1 text-indigo-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                      <span>Explore</span>
-                      <span>→</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Subcategories Grid */}
-          {!contentLoading && currentLevel === 'subcategories' && filteredSubcategories.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredSubcategories.map((sub, index) => (
-                <div
-                  key={sub._id}
-                  onClick={() => handleSubcategoryClick(sub)}
-                  className="group cursor-pointer bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-green-300 hover:shadow-2xl hover:shadow-green-200/50 hover:-translate-y-2 transition-all duration-300 shadow-lg"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      📁
-                    </div>
-                    <span className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
-                      Subcategory
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-xl mb-3 group-hover:text-green-700 transition-colors line-clamp-2">{sub.name}</h3>
-                  {sub.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">{sub.description}</p>
-                  )}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">{new Date(sub.createdAt).toLocaleDateString()}</span>
-                    <div className="flex items-center space-x-1 text-green-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                      <span>Explore</span>
-                      <span>→</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Topics Grid */}
-          {!contentLoading && currentLevel === 'topics' && filteredTopics.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredTopics.map((topic, index) => (
-                <div
-                  key={topic._id}
-                  onClick={() => handleTopicClick(topic)}
-                  className="group cursor-pointer bg-white rounded-2xl p-6 border-2 border-gray-100 hover:border-purple-300 hover:shadow-2xl hover:shadow-purple-200/50 hover:-translate-y-2 transition-all duration-300 shadow-lg"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      📋
-                    </div>
-                    <span className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">
-                      Topic
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-xl mb-3 group-hover:text-purple-700 transition-colors line-clamp-2">{topic.name}</h3>
-                  {topic.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">{topic.description}</p>
-                  )}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">{new Date(topic.createdAt).toLocaleDateString()}</span>
-                    <div className="flex items-center space-x-1 text-purple-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                      <span>View</span>
-                      <span>→</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Letters Grid */}
-          {!contentLoading && currentLevel === 'letters' && filteredLetters.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-              {filteredLetters.map((letter, index) => (
-                <div
-                  key={letter._id}
-                  className="bg-white rounded-2xl p-8 border-2 border-gray-100 hover:border-orange-300 hover:shadow-2xl hover:shadow-orange-200/50 hover:-translate-y-2 transition-all duration-300 shadow-lg group"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      📄
-                    </div>
-                    <span className="bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-4 py-2 rounded-full text-sm font-bold">
-                      Letter
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-xl mb-4 group-hover:text-orange-700 transition-colors line-clamp-2">{letter.title}</h3>
-                  <p className="text-gray-600 text-sm mb-6 line-clamp-4 leading-relaxed">{letter.content}</p>
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">{new Date(letter.createdAt).toLocaleDateString()}</span>
-                    <button className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:shadow-lg hover:shadow-orange-200/50 transition-all duration-300 transform hover:scale-105">
-                      Read More
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
-    </DashboardShell>
+
+        {/* Footer */}
+        <footer className="mt-12 text-center">
+          <p className="text-sm text-gray-500">Wordstowellness - write with care.</p>
+        </footer>
+      </main>
+    </div>
   );
 }
 
@@ -483,10 +282,10 @@ function DashboardContent() {
 export default function Dashboard() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 flex items-center justify-center animate-fade-in">
-        <div className="space-y-6">
-          <div className="animate-spin rounded-full h-32 w-32 border-4 border-primary-200 border-t-primary-600 mx-auto shadow-glow"></div>
-          <p className="text-secondary-900 text-center text-lg font-medium">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-sky-50 to-teal-50 flex items-center justify-center">
+        <div className="space-y-4">
+          <div className="w-12 h-12 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-600 text-center">Loading your dashboard...</p>
         </div>
       </div>
     }>
