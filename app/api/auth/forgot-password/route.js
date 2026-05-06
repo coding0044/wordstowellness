@@ -27,7 +27,7 @@ transporter.verify().then(() => {
 
 async function sendOTPEmail(email, otp, name) {
   const mailOptions = {
-    from: `"FA OTP SYSTEM" <${emailUser}>`,
+    from: `"wordstowellness" <${emailUser}>`,
     to: email,
     subject: 'Password Reset OTP - Your Verification Code',
     html: `
@@ -35,7 +35,7 @@ async function sendOTPEmail(email, otp, name) {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Password Reset OTP</title>
+        <title>Password Reset - wordstowellness</title>
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 500px; margin: 0 auto; padding: 20px; }
@@ -49,7 +49,7 @@ async function sendOTPEmail(email, otp, name) {
       <body>
         <div class="container">
           <div class="header">
-            <h2>Password Reset Request</h2>
+            <h1>wordstowellness - Password Reset</h1>
           </div>
           <div class="content">
             <p>Hello ${name || 'User'},</p>
@@ -72,7 +72,7 @@ async function sendOTPEmail(email, otp, name) {
           </div>
           <div class="footer">
             <p>This is an automated message, please do not reply to this email.</p>
-            <p>&copy; ${new Date().getFullYear()} Your App Name. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} wordstowellness. All rights reserved.</p>
           </div>
         </div>
       </body>

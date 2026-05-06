@@ -15,7 +15,7 @@ export default function PageShell({
       <div className={`mx-auto ${maxWidth}`}>
         <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/95 shadow-2xl shadow-slate-950/10 backdrop-blur-xl">
           <div className="bg-gradient-to-r from-slate-800 to-slate-700 px-8 py-10 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-sky-400">Auth system</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-sky-400">wordstowellness</p>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-white">{title}</h1>
             {subtitle && <p className="mt-3 text-sm text-slate-200">{subtitle}</p>}
           </div>

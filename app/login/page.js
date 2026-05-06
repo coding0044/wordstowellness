@@ -51,7 +51,12 @@ export default function LoginPage() {
           const data = await res.json();
           
           if (res.ok) {
-            router.push('/dashboard');
+            localStorage.setItem('token', data.token);
+            if (data.user.role === 'admin') {
+              router.push('/admin-dashboard');
+            } else {
+              router.push('/dashboard');
+            }
           } else {
             setError(data.message || 'Google login failed');
             setGoogleLoading(false);

@@ -7,8 +7,8 @@ import { Providers } from '@/providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Auth System',
-  description: 'Complete authentication system with Next.js and MongoDB',
+  title: 'Wordstowellness',
+  description: 'Therapeutic letters and wellness platform',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
