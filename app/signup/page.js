@@ -8,7 +8,6 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -82,7 +81,7 @@ export default function Signup() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({ name, email, password, role: 'user' }),
       });
 
       const data = await res.json();
@@ -184,18 +183,6 @@ export default function Signup() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition-all"
-              >
-                <option value="user">Regular User</option>
-                <option value="admin">Administrator</option>
-              </select>
             </div>
 
             <button
